@@ -40,19 +40,7 @@ A custom HDMI framebuffer implementation on a Zynq FPGA using a BRAM-backed RGB8
 
 ## General Pipeline
 
-PS (Vitis)
-    ↓
-AXI BRAM Controller
-    ↓
-Block RAM
-    ↓
-Framebuffer Reader
-    ↓
-Pipeline Delay
-    ↓
-RGB2DVI
-    ↓
-HDMI Monitor
+PS (Vitis) -> AXI BRAM Controller -> Block RAM -> Framebuffer Reader -> Pipeline Delay -> RGB2DVI -> HDMI Monitor
 
 ## Architecture
 
