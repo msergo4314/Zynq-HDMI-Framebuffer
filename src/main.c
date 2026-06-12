@@ -94,7 +94,7 @@ int main(void) {
   if (x != SD_OK) {
     printf("could not read image file on SD card\n");
     return 23;
-  }                    
+  }
   printf("Read %d bytes from file on SD card\n", bytes_read);
 
   for (int y = 0; y < 300; y++) {
@@ -104,11 +104,11 @@ int main(void) {
           image_pixels[y * 300 + x]; // note the upper byte is always sliced off
                                      // here (rgb888)
 
-      //   if (x == 0 || x == 299 || y == 0 || y == 299) {
-      //     colour = 0x00FFFFFF;
-      //   } else {
-      //     colour = 0x00390E6E;
-      //   }
+      // if (x == 0 || x == 299 || y == 0 || y == 299) {
+      //   colour = 0x00FFFFFF;
+      // } else {
+      //   colour = 0x00390E6E;
+      // }
 
       // if (x == 0) {
       //   colour = 0x00FFFFFF;
@@ -128,11 +128,11 @@ int main(void) {
     }
   }
 
-  printf("Inspecting first 5 elements of BRAM:\n");
-  for (int i = 0; i < 5; i++) {
-    uint32_t pixel = XBram_ReadReg(base_address, i * 4);
-    printf("ADDRESS %d: %06x\n", i, pixel);
-  }
+  // printf("Inspecting first 5 elements of BRAM:\n");
+  // for (int i = 0; i < 5; i++) {
+  //   uint32_t pixel = XBram_ReadReg(base_address, i * 4);
+  //   printf("ADDRESS %d: %06x\n", i, pixel);
+  // }
 
   xil_printf("End of main\r\n");
   while (1) {

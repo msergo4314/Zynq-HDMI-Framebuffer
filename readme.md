@@ -83,7 +83,7 @@ the clock wizard generates a clock signal at 40 Mhz / 74 Mhz / 148 Mhz (depends 
 
 ### multiplexer for selecting the pixel to display
 
-- In the case of design A, the image being rendered is only 300x300 px, so for most of the time the visible portion of the screen needs to be black (empty). However, since the output of the block ram is not known when the display is not enabled (recall that the enable for the block ram is only asserted when x and y are below 300 and the display enable is high), it is necessary to choose between the output of the block ram and a black pixel. This can be acheived easily with a 24 bit 2-to-1 mux which uses the block ram enable as a selection line and passes the block ram output if it was enabled or a black pixel if it was disabled.
+- In the case of design 1, the image being rendered is only 300x300 px, so for most of the time the visible portion of the screen needs to be black (empty). However, since the output of the block ram is not known when the display is not enabled (recall that the enable for the block ram is only asserted when x and y are below 300 and the display enable is high), it is necessary to choose between the output of the block ram and a black pixel. This can be acheived easily with a 24 bit 2-to-1 mux which uses the block ram enable as a selection line and passes the block ram output if it was enabled or a black pixel if it was disabled. Since the AXI BRAM has a one cycle latency relative to the timing generator signals, the bram enable signal that is used for multiplexing is delayed by one clock cycle. If this signal were not delayed for the multiplexer, the design would use the bram enable from one clock cycle (pixel) ago, and the right border of the image will be truncated due to the misalignment.
 
 ![IP BRAM MUX SELECTION](/pictures/IP_BRAM_MUX_SELECTION.png)
 
@@ -94,55 +94,6 @@ the clock wizard generates a clock signal at 40 Mhz / 74 Mhz / 148 Mhz (depends 
 ### rgb2dvi encoding
 
 - the Digilent RGB-to-DVI encoding IP takes the delayed Hsync/Vsync/Display enable and the multiplexed pixel output along with the pixel clock to encode the image data according to TMDS standards. This involves serializing the data such that transitions are minimized outputting a differential pair for the HDMI clock/data channels (hence the name). It is uses as an IP block since TMDS encoding is beyond the scope of the project. The output pins of this block are connected to the HDMI port using the PL nets and constraints file.
-
-### Complete Pipeline
-
-for Design 1, the pipeline is as follows:
-
-Cycle 0
--------
-Timing Generator
-x=100 y=50
-
-Cycle 1
--------
-BRAM Address Registered
-
-Cycle 1
--------
-Delayed hsync/vsync/de valid
-
-Cycle 1-2
--------
-Pixel Data Available from AXI BRAM
-
-
-Cycle 1 end
--------
-rgb2dvi receives aligned signals
-
-for Design 2, the pipeline is as follows:
-
-Cycle 0
--------
-Timing Generator
-x=100 y=50
-
-Cycle 1
--------
-BRAM Address Registered
-
-Cycle 2
--------
-Pixel Data Available
-
-Cycle 2
--------
-Delayed hsync/vsync/de valid
-
-Cycle 2 end
--------
-rgb2dvi receives aligned signals
 
 ## Design implementation
 
@@ -161,7 +112,7 @@ rgb2dvi receives aligned signals
   converts rgb888 to rbg888 using a simple slice operation.
 
 - [image_to_raw_file.py](/src/image_to_raw_file.py)
-  a python script that uses numpy and cv2 to write any image to an uncompressed 300x300 RGB888 array on a mounted SD card. This allows the ZYNQ to read this file at runtime to fill in the AXI BRAM with the raw pixels.
+  a python script that uses numpy and cv2 to write any image to an uncompressed 300x300 RGB888 array on a mounted SD card. This allows the ZYNQ to read this file at runtime to fill in the AXI BRAM with the raw pixels. Has some options for hardcoded test images
 
 - [main.c](/src/main.c)
   Vitis C code for design 1 that reads the binary data created with the python script from the SD card to populate the AXI BRAM
@@ -184,7 +135,7 @@ Design 2 (Custom BRAM implementation):
 
 ### Pipeline misalignment
 
-Throughout development, using undelayed signals for the HDMI timings caused image skew, which was especially noticible for the white 1 pixel border.
+Throughout development, using undelayed signals for the HDMI timings caused image skew, which was especially noticible for the white 1 pixel border. One subtle bug with design 1 was caused by an earlier version with andelayed bram enable used for multiplexing the pixel input of the rgb2dvi encoder -- The current mux selection line would be early relative to the output of the BRAM, so the far right side of the loaded image would be truncated by one pixel/vertical column. This was not visible for "normal" pictures since they normally look the same with one column removed, but was clearly visible with the 1 pixel border pattern used to test design 2.
 
 ### AXI BRAM Uses Byte Addressing
 
@@ -196,13 +147,13 @@ so framebuffer addresses had to be multiplied by 4.
 
 Incorrect addressing resulted in multiple adjacent
 pixels displaying the same value because the lower
-address bits were effectively ignored by the memory.
+address bits were effectively ignored by the axi BRAM memory module.
 
 The correct formula is:  address = (y * width + x)  << 2. Notably, this was not necessary for the custom BRAM implementation, which could be indexed using a word address
 
 ## Results
 
-The following use a resolution of 800x600 px at 60 Hz, but 720p and 1080p also work.
+The following use a resolution of 800x600 px at 60 Hz, but 720p and 1080p also work. Frame rates above 60 Hz are theoretically possible with an increased clock frequency, but will introduce serious timing constraints and may not be possible to generate with the clocking wizard.
 
 ### Design 1 Dynamic Image Rendering
 
